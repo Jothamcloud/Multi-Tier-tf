@@ -6,6 +6,14 @@ resource "aws_s3_bucket" "static" {
   }
 }
 
+resource "aws_s3_bucket_ownership_controls" "static" {
+  bucket = aws_s3_bucket.static.id
+
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
 resource "aws_s3_bucket_public_access_block" "static" {
   bucket = aws_s3_bucket.static.id
 
@@ -15,7 +23,19 @@ resource "aws_s3_bucket_public_access_block" "static" {
   restrict_public_buckets = false
 }
 
+resource "aws_s3_bucket_acl" "static" {
+  depends_on = [
+    aws_s3_bucket_ownership_controls.static,
+    aws_s3_bucket_public_access_block.static,
+  ]
+
+  bucket = aws_s3_bucket.static.id
+  acl    = "public-read"
+}
+
 resource "aws_s3_bucket_policy" "static" {
+  depends_on = [aws_s3_bucket_public_access_block.static]
+  
   bucket = aws_s3_bucket.static.id
 
   policy = jsonencode({
