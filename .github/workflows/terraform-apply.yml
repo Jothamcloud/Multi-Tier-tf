@@ -1,85 +1,76 @@
-name: Deploy
+name: Deploy Infrastructure
+
 on:
   push:
     branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  statuses: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0    # Fetch all history for .GitInfo and .Lastmod
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.9.4  # Specify your Terraform version
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.9.4
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # Adjust to your AWS region
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
 
-      - name: Terraform Init
-        id: init
-        run: terraform init
+    - name: Terraform Init
+      run: terraform init
 
-      - name: Terraform Apply
-        id: apply
-        env:
-          TF_VAR_aws_region: ${{ vars.TF_VAR_aws_region }}
-          TF_VAR_vpc_cidr: ${{ vars.TF_VAR_vpc_cidr }}
-          TF_VAR_instance_type: ${{ vars.TF_VAR_instance_type }}
-          TF_VAR_ami_id: ${{ vars.TF_VAR_ami_id }}
-          TF_VAR_db_instance_class: ${{ vars.TF_VAR_db_instance_class }}
-          TF_VAR_db_name: ${{ vars.TF_VAR_db_name }}
-          TF_VAR_db_username: ${{ secrets.TF_VAR_db_username }}
-          TF_VAR_db_password: ${{ secrets.TF_VAR_db_password }}
-          TF_VAR_bucket_name: ${{ secrets.TF_VAR_bucket_name }}
-        run: |
-          terraform apply -auto-approve \
-          -var="aws_region=${TF_VAR_aws_region}" \
-          -var="vpc_cidr=${TF_VAR_vpc_cidr}" \
-          -var="instance_type=${TF_VAR_instance_type}" \
-          -var="ami_id=${TF_VAR_ami_id}" \
-          -var="db_instance_class=${TF_VAR_db_instance_class}" \
-          -var="db_name=${TF_VAR_db_name}" \
-          -var="db_username=${TF_VAR_db_username}" \
-          -var="db_password=${TF_VAR_db_password}" \
-          -var="bucket_name=${TF_VAR_bucket_name}" \
-          -input=false
-        
-      - name: Terraform Output
-        id: output
-        run: terraform output
-        
-      - name: Comment on Commit
-        uses: actions/github-script@v6
-        if: always()
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const output = `#### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-            #### Terraform Apply 🚀\`${{ steps.apply.outcome }}\`
+    - name: Terraform Apply
+      run: |
+        terraform apply -auto-approve \
+        -var="aws_region=${{ vars.TF_VAR_aws_region }}" \
+        -var="vpc_cidr=${{ vars.TF_VAR_vpc_cidr }}" \
+        -var="instance_type=${{ vars.TF_VAR_instance_type }}" \
+        -var="ami_id=${{ vars.TF_VAR_ami_id }}" \
+        -var="db_instance_class=${{ vars.TF_VAR_db_instance_class }}" \
+        -var="db_name=${{ vars.TF_VAR_db_name }}" \
+        -var="db_username=${{ secrets.TF_VAR_db_username }}" \
+        -var="db_password=${{ secrets.TF_VAR_db_password }}" \
+        -var="bucket_name=${{ secrets.TF_VAR_bucket_name }}"
+
+    - name: Terraform Output
+      id: terraform_output
+      run: terraform output
+
+    - name: Comment on Commit
+      uses: actions/github-script@v6
+      if: always()
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          github.rest.repos.createCommitComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            commit_sha: context.sha,
+            body: `## Terraform Apply Results
             
-            <details><summary>Show Output</summary>
+            Status: ${{ job.status }}
+            
+            <details><summary>Show Terraform Output</summary>
             
             \`\`\`
-            ${{ steps.output.outputs.stdout }}
+            ${{ steps.terraform_output.outputs.stdout }}
             \`\`\`
             
             </details>
             
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-            
-            github.rest.repos.createCommitComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: context.sha,
-              body: output
-            })
+            *Deployed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`
+          })
