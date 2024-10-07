@@ -14,7 +14,6 @@
 11. [Maintenance](#maintenance)
 12. [Troubleshooting](#troubleshooting)
 13. [Contributing](#contributing)
-14. [License](#license)
 
 ## Project Overview
 
