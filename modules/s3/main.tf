@@ -1,3 +1,5 @@
+# modules/s3/main.tf
+
 resource "aws_s3_bucket" "static" {
   bucket = var.bucket_name
 
@@ -35,7 +37,7 @@ resource "aws_s3_bucket_acl" "static" {
 
 resource "aws_s3_bucket_policy" "static" {
   depends_on = [aws_s3_bucket_public_access_block.static]
-  
+
   bucket = aws_s3_bucket.static.id
 
   policy = jsonencode({
