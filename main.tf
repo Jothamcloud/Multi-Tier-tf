@@ -22,14 +22,14 @@ module "security" {
 }
 
 module "ec2" {
-  source                 = "./modules/ec2"
-  vpc_id                 = module.networking.vpc_id
-  private_subnet_ids     = module.networking.private_subnet_ids
-  public_subnet_ids      = module.networking.public_subnet_ids
-  alb_security_group_id  = module.security.alb_security_group_id
-  web_security_group_id  = module.security.web_security_group_id
-  instance_type          = var.instance_type
-  ami_id                 = var.ami_id
+  source                = "./modules/ec2"
+  vpc_id                = module.networking.vpc_id
+  private_subnet_ids    = module.networking.private_subnet_ids
+  public_subnet_ids     = module.networking.public_subnet_ids
+  alb_security_group_id = module.security.alb_security_group_id
+  web_security_group_id = module.security.web_security_group_id
+  instance_type         = var.instance_type
+  ami_id                = var.ami_id
 }
 
 module "rds" {
