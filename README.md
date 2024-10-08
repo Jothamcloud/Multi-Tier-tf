@@ -185,4 +185,4 @@ This collaborative workflow ensures that all changes are thoroughly reviewed, te
 7. Once approved, your changes will be merged and deployed
 
 
-Use the link below to checkout the full project workthrough/documentation 
+Use the link below to checkout the full project workthrough/documentation.
