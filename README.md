@@ -1,28 +1,26 @@
-# Terraform AWS Multi-Tier Web Application
+# Collaborative GitOps Terraform AWS Multi-Tier Web Application
 
 ## Table of Contents
 1. [Project Overview](#project-overview)
 2. [Architecture](#architecture)
 3. [Prerequisites](#prerequisites)
-4. [Directory Structure](#directory-structure)
-5. [Module Description](#module-description)
-6. [Getting Started](#getting-started)
-7. [Configuration](#configuration)
-8. [Deployment](#deployment)
-9. [Remote State](#remote-state)
-10. [Best Practices](#best-practices)
-11. [Maintenance](#maintenance)
-12. [Troubleshooting](#troubleshooting)
-13. [Contributing](#contributing)
+4. [Repository Structure](#repository-structure)
+5. [Setup and Configuration](#setup-and-configuration)
+6. [Usage](#usage)
+7. [Collaborative Workflow](#collaborative-workflow)
+8. [GitOps Workflows](#gitops-workflows)
+9. [Security Considerations](#security-considerations)
+10. [Troubleshooting](#troubleshooting)
+11. [Contributing](#contributing)
+12. [License](#license)
 
 ## Project Overview
 
-This Terraform project deploys a multi-tier web application infrastructure on AWS. It includes a VPC, public and private subnets, an Application Load Balancer, EC2 instances in an Auto Scaling Group, an RDS database, and an S3 bucket for static content.
+This GitOps project uses Terraform to deploy and manage a scalable, multi-tier web application infrastructure on AWS. It follows GitOps principles, where the Git repository is the single source of truth for declarative infrastructure and application code. The project is designed for collaborative team environments, allowing multiple engineers to propose, review, and implement infrastructure changes in a controlled and transparent manner.
 
 ## Architecture
 
-The infrastructure consists of:
-- VPC with public and private subnets across two Availability Zones
+- VPC with public and private subnets across multiple Availability Zones
 - Internet Gateway for public internet access
 - Application Load Balancer in public subnets
 - EC2 instances in private subnets, managed by an Auto Scaling Group
@@ -32,128 +30,159 @@ The infrastructure consists of:
 
 ## Prerequisites
 
-- [Terraform](https://www.terraform.io/downloads.html) (v1.0.0 or newer)
+- [Terraform](https://www.terraform.io/downloads.html) (v1.9.4 or newer)
 - AWS CLI configured with appropriate credentials
-- An AWS account with necessary permissions
+- GitHub account (for GitOps workflows)
 
-## Directory Structure
+## Repository Structure
 
 ```
 .
 ├── main.tf
 ├── variables.tf
 ├── outputs.tf
-├── terraform.tfvars
-├── backend.tf
+├── terraform.tfvars (git-ignored)
 ├── .gitignore
-├── .terraformignore
 ├── README.md
-└── modules/
-    ├── networking/
-    │   ├── main.tf
-    │   ├── variables.tf
-    │   └── outputs.tf
-    ├── security/
-    │   ├── main.tf
-    │   ├── variables.tf
-    │   └── outputs.tf
-    ├── ec2/
-    │   ├── main.tf
-    │   ├── variables.tf
-    │   └── outputs.tf
-    ├── rds/
-    │   ├── main.tf
-    │   ├── variables.tf
-    │   └── outputs.tf
-    └── s3/
-        ├── main.tf
-        ├── variables.tf
-        └── outputs.tf
+├── modules/
+│   ├── networking/
+│   ├── security/
+│   ├── ec2/
+│   ├── rds/
+│   └── s3/
+└── .github/
+    └── workflows/
+        ├── terraform-validate.yml
+        ├── terraform-plan.yml
+        ├── terraform-apply.yml
+        └── terraform-destroy.yml
 ```
 
-## Module Description
-
-- `networking`: Sets up VPC, subnets, and internet gateway
-- `security`: Defines security groups for ALB, EC2, and RDS
-- `ec2`: Configures ALB, launch template, and Auto Scaling Group
-- `rds`: Sets up the RDS MySQL instance
-- `s3`: Creates an S3 bucket for static content
-
-## Getting Started
+## Setup and Configuration
 
 1. Clone this repository
-2. Navigate to the project directory
-3. Run `terraform init` to initialize the Terraform working directory
+2. Create a `terraform.tfvars` file in the root directory with your specific variable values
+3. Set up GitHub Secrets for sensitive information:
+   - AWS_ACCESS_KEY_ID
+   - AWS_SECRET_ACCESS_KEY
+   - TF_VAR_db_username
+   - TF_VAR_db_password
+   - TF_VAR_bucket_name
+4. Set up GitHub Variables for non-sensitive configuration:
+   - TF_VAR_aws_region
+   - TF_VAR_vpc_cidr
+   - TF_VAR_instance_type
+   - TF_VAR_ami_id
+   - TF_VAR_db_instance_class
+   - TF_VAR_db_name
 
-## Configuration
+## Usage
 
-1. Create a `terraform.tfvars` file in the root directory
-2. Specify values for the variables defined in `variables.tf`. For example:
+This project follows GitOps principles and is designed for team collaboration. All changes to the infrastructure go through a structured process of proposal, review, and controlled deployment:
 
-```hcl
-aws_region        = "us-west-2"
-vpc_cidr          = "10.0.0.0/16"
-instance_type     = "t2.micro"
-ami_id            = "ami-0c55b159cbfafe1f0"
-db_instance_class = "db.t2.micro"
-db_name           = "myapp"
-db_username       = "admin"
-db_password       = "your-secure-password"
-bucket_name       = "your-unique-bucket-name"
-```
+1. Engineers make changes to the Terraform files in their local repository
+2. Changes are committed and pushed to a feature branch
+3. A Pull Request (PR) is opened to the `main` branch
+4. The CI/CD pipelines automatically validate and plan the changes
+5. Team members review the proposed changes and the Terraform plan
+6. Discussions and adjustments can be made directly in the PR
+7. Once approved by the team, the PR can be merged
+8. Upon merging, changes are automatically applied to the production infrastructure
 
-## Deployment
+This process ensures that:
+- All changes are thoroughly reviewed before implementation
+- The team has visibility into all infrastructure modifications
+- There's a clear audit trail of changes and approvals
+- Production deployments are controlled and predictable
 
-1. Run `terraform plan -out=tfplan` to preview the changes
-2. If the plan looks good, apply it with `terraform apply tfplan`
-3. Terraform will output the ALB DNS name, RDS endpoint, and S3 bucket name upon successful application
+## Collaborative Workflow
 
-## Remote State
+1. **Propose Changes**: 
+   - Create a new branch for your proposed changes
+   - Make modifications to the Terraform configurations
+   - Commit and push your changes
 
-It's recommended to use remote state storage. To set this up:
+2. **Open Pull Request**:
+   - Create a PR to merge your changes into the `main` branch
+   - The Terraform Plan workflow will automatically run and comment on the PR
 
-1. Create an S3 bucket for state storage
-2. Configure the backend in `backend.tf`:
+3. **Review Process**:
+   - Team members review the code changes
+   - Reviewers examine the Terraform plan output
+   - Discussions and requests for changes can be made in the PR comments
 
-```hcl
-terraform {
-  backend "s3" {
-    bucket         = "your-terraform-state-bucket"
-    key            = "path/to/your/state/file.tfstate"
-    region         = "us-west-2"
-  }
-}
-```
+4. **Iterate if Necessary**:
+   - Address any feedback or concerns
+   - Push additional commits to update the PR
+   - The plan will automatically re-run, showing the updated changes
 
-4. Run `terraform init` to initialize the backend
+5. **Approval**:
+   - Once the team is satisfied, approvals can be given on the PR
+   - Required approvals (as set in repository settings) must be met
 
-## Best Practices
+6. **Merge and Deploy**:
+   - Merge the approved PR into the `main` branch
+   - This automatically triggers the Terraform Apply workflow
+   - Changes are deployed to the production infrastructure
 
-- Use consistent naming conventions for resources
-- Implement a tagging strategy for better resource management
-- Regularly update Terraform and provider versions
-- Use workspaces for managing multiple environments
-- Encrypt sensitive data in transit and at rest
+7. **Verify**:
+   - The team can verify the changes in the production environment
+   - Any issues can be quickly addressed through the same process
 
-## Maintenance
+This collaborative workflow ensures that all changes are thoroughly reviewed, tested, and approved before reaching the production environment, maintaining infrastructure integrity and team alignment.
 
-- Regularly apply `terraform plan` to check for drift
-- Keep your Terraform modules and root configuration up to date
-- Regularly review and optimize your infrastructure for cost and performance
-- Implement monitoring and alerting for your infrastructure
+## GitOps Workflows
+
+### 1. Terraform Validate (`terraform-validate.yml`)
+- **Trigger**: On every push to any branch
+- **Purpose**: Checks the syntax and validity of Terraform files
+- **Actions**: Runs `terraform init` and `terraform validate`
+- **Team Usage**: Provides immediate feedback on syntax issues
+
+### 2. Terraform Plan (`terraform-plan.yml`)
+- **Trigger**: On pull requests to the `main` branch
+- **Purpose**: Shows the planned changes to the infrastructure
+- **Actions**: Runs `terraform plan` and comments the plan output on the PR
+- **Team Usage**: Allows reviewers to see exactly what changes are being proposed
+
+### 3. Terraform Apply (`terraform-apply.yml`)
+- **Trigger**: On push to the `main` branch (i.e., when a PR is merged)
+- **Purpose**: Applies the changes to the production infrastructure
+- **Actions**: Runs `terraform apply -auto-approve`
+- **Team Usage**: Automatically deploys approved changes to production
+
+### 4. Terraform Destroy (`terraform-destroy.yml`)
+- **Trigger**: Manual trigger from GitHub Actions tab
+- **Purpose**: Destroys the entire infrastructure (use with extreme caution!)
+- **Actions**: Requires manual confirmation, then runs `terraform destroy -auto-approve`
+- **Team Usage**: Provides a controlled way to tear down the infrastructure if needed
+
+## Security Considerations
+
+- Sensitive data is stored in GitHub Secrets
+- S3 bucket is configured with appropriate access controls
+- RDS instance is in a private subnet
+- All resources are protected by security groups
+- Changes to infrastructure require PR approval, enhancing security through code review
+- The principle of least privilege is applied to AWS IAM roles and policies
 
 ## Troubleshooting
 
-- If you encounter issues, check the Terraform and AWS provider logs
-- Ensure your AWS credentials are correctly configured
-- Verify that all required variables are set in `terraform.tfvars`
-- Check AWS service health dashboard for any ongoing issues
+- Check the GitHub Actions tab for detailed logs of each workflow run
+- Review the comments on PRs for Terraform plan outputs
+- Ensure all required GitHub Secrets and Variables are set correctly
+- Verify that your AWS credentials have the necessary permissions
+- For persistent issues, consult the AWS CloudWatch logs for specific resource problems
 
 ## Contributing
 
 1. Fork the repository
-2. Create a new branch for your feature
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
+2. Create a new branch for your feature or fix
+3. Make your changes and commit them with clear, descriptive messages
+4. Push to your fork and submit a Pull Request to the main repository
+5. Wait for the validation and plan workflows to complete
+6. Address any issues or concerns raised in the PR review
+7. Once approved, your changes will be merged and deployed
 
+
+Use the link below to checkout the full project workthrough/documentation 
